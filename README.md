@@ -136,4 +136,4 @@ npm run start
 
 ## Aviso comercial
 
-Os valores do simulador são estimativas. As condições finais dependem do grupo, regulamento e contrato. A contemplação ocorre por sorteio ou lance e não possui data garantida.
+Os valores do simulador são estimativas. As condições finais dependem do grupo, regulamento e contrato. A contemplação ocorre por sorteio ou lance e não possui data garantida....
