@@ -26,9 +26,9 @@ const navItems = [
 ];
 
 const goals: Array<{ value: Goal; label: string; copy: string; icon: typeof CarFront }> = [
-  { value: "carro", label: "Carros", copy: "Ford ou qualquer outra marca, novo ou seminovo.", icon: CarFront },
+  { value: "carro", label: "Automóveis", copy: "Automóveis de qualquer marca, novos ou seminovos.", icon: CarFront },
   { value: "imovel", label: "Imóveis", copy: "Compra, construção ou reforma da sua casa.", icon: Building2 },
-  { value: "moto", label: "Motos", copy: "Modelos de diferentes estilos acima de R$ 20 mil.", icon: Bike },
+  { value: "moto", label: "Motocicletas", copy: "Modelos de diferentes estilos acima de R$ 20 mil.", icon: Bike },
 ];
 
 export function PublicHome() {
@@ -122,7 +122,7 @@ export function PublicHome() {
 
       <section id="inicio" className="relative min-h-[760px] bg-[#071b38] pt-[80px] text-white lg:min-h-[780px]">
         <div className="absolute inset-0 overflow-hidden">
-          <Image src="/pedrao-consorcios-hero.png" alt="Casal planejando a conquista de carro, casa e moto" fill priority className="object-cover object-[66%_center] opacity-55" sizes="100vw" />
+          <Image src="/pedrao-consorcios-hero.png" alt="Casal planejando a conquista de automóvel, casa e motocicleta" fill priority className="object-cover object-[66%_center] opacity-55" sizes="100vw" />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,#071b38_0%,rgba(7,27,56,.94)_36%,rgba(7,27,56,.56)_66%,rgba(7,27,56,.25)_100%)]" />
           <div className="absolute inset-0 bg-[linear-gradient(0deg,#071b38_0%,transparent_35%)]" />
         </div>
@@ -130,7 +130,7 @@ export function PublicHome() {
           <div className="max-w-2xl">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#f5c55e]/30 bg-[#f5b942]/10 px-4 py-2 text-xs font-bold tracking-wide text-[#ffd77d] backdrop-blur"><Sparkles className="size-4" /> PLANEJAMENTO FEITO PARA VOCÊ</div>
             <h1 className="text-balance text-5xl font-black leading-[1.02] tracking-[-.04em] sm:text-6xl lg:text-7xl">O que você quer <span className="text-[#f5b942]">conquistar</span> agora?</h1>
-            <p className="mt-6 max-w-xl text-lg leading-8 text-white/72 sm:text-xl">Transforme seu próximo carro, sua casa ou sua moto em um plano claro, com simulação transparente e atendimento direto.</p>
+            <p className="mt-6 max-w-xl text-lg leading-8 text-white/72 sm:text-xl">Transforme seu próximo automóvel, sua casa ou sua motocicleta em um plano claro, com simulação transparente e atendimento direto.</p>
             <div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/75">
               <span className="flex items-center gap-2"><Check className="size-4 text-[#f5b942]" /> Sem compromisso</span>
               <span className="flex items-center gap-2"><Check className="size-4 text-[#f5b942]" /> Atendimento humano</span>
@@ -189,7 +189,7 @@ export function PublicHome() {
 
           <div className="rounded-[30px] border border-[#dce5f0] bg-[#f8fafc] p-5 shadow-[0_24px_70px_rgba(22,47,82,.08)] sm:p-8">
             <div className="grid gap-7 sm:grid-cols-2">
-              <label className="space-y-2"><span className="text-sm font-extrabold">O que você quer conquistar?</span><Select value={goal} onValueChange={(value) => chooseGoal(value as Goal, false)}><SelectTrigger className="h-12 w-full rounded-xl bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="carro">Carro</SelectItem><SelectItem value="imovel">Imóvel</SelectItem><SelectItem value="moto">Moto</SelectItem></SelectContent></Select></label>
+              <label className="space-y-2"><span className="text-sm font-extrabold">O que você quer conquistar?</span><Select value={goal} onValueChange={(value) => chooseGoal(value as Goal, false)}><SelectTrigger className="h-12 w-full rounded-xl bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="carro">Automóveis</SelectItem><SelectItem value="imovel">Imóveis</SelectItem><SelectItem value="moto">Motocicletas</SelectItem></SelectContent></Select></label>
               <label className="space-y-2"><span className="text-sm font-extrabold">Prazo desejado</span><Select value={String(term)} onValueChange={(value) => setTerm(Number(value))}><SelectTrigger className="h-12 w-full rounded-xl bg-white"><SelectValue /></SelectTrigger><SelectContent>{[60, 72, 84, 100, 120, 180].map((months) => <SelectItem key={months} value={String(months)}>{months} meses</SelectItem>)}</SelectContent></Select></label>
             </div>
             <div className="mt-8 rounded-2xl border border-[#dce5f0] bg-white p-5 sm:p-6"><div className="flex flex-wrap items-end justify-between gap-3"><div><span className="text-sm font-bold text-[#687b91]">Crédito desejado</span><strong className="mt-1 block text-3xl font-black text-[#0b2d5c]">{formatBRL(credit)}</strong></div><span className="text-xs font-semibold text-[#8090a4]">Ajuste o valor abaixo</span></div><Slider className="mt-7 [&_[data-slot=slider-range]]:bg-[#f5b942] [&_[data-slot=slider-thumb]]:size-5 [&_[data-slot=slider-thumb]]:border-[#0b2d5c]" value={[credit]} onValueChange={(value) => setCredit(value[0])} min={20000} max={800000} step={5000} aria-label="Valor do crédito" /><div className="mt-3 flex justify-between text-xs font-semibold text-[#8a98aa]"><span>R$ 20 mil</span><span>R$ 800 mil</span></div></div>
