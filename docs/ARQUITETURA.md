@@ -2,127 +2,70 @@
 
 ## Visao Geral
 
-O projeto Pedrao Consorcios e uma aplicacao full stack em Next.js para apresentar planos de consorcio, simular parcelas, enviar contatos para o WhatsApp e administrar campanhas e interessados.
+O projeto Recol Ford Consorcio e uma aplicacao full stack em Next.js para simulacao publica, captacao de leads e gestao administrativa compartilhada por tres especialistas.
 
 A aplicacao combina:
 
-- uma pagina publica comercial com simulador;
+- paginas publicas separadas para home, simulacao e especialistas;
 - APIs internas do Next.js;
-- um painel administrativo protegido por senha;
-- um adaptador temporario de dados em memoria;
-- um schema SQL preparado para uma futura base persistente.
+- painel administrativo protegido por sessao local;
+- repositorio de dados com adaptadores SQLite e Supabase/Postgres;
+- migracoes locais reproduziveis;
+- sincronizacao de midias locais para `public/media`.
 
-O design, textos, cores, numero de WhatsApp e formula do simulador ficam concentrados no codigo atual e nao precisam ser alterados para publicar o projeto no GitHub.
-
-## Tecnologias
-
-- Next.js 16 com App Router.
-- React 19.
-- TypeScript.
-- Tailwind CSS 4.
-- Componentes Shadcn/Radix UI.
-- Lucide React para icones.
-- Route Handlers do Next.js para as APIs.
-- Cookies HTTP-only para sessao administrativa.
+Nao ha publicacao automatica, push, deploy ou integracao externa obrigatoria no fluxo local.
 
 ## Estrutura de Pastas
 
 ```text
 app/
-  page.tsx                     Entrada da pagina publica.
-  layout.tsx                   Layout raiz e metadata.
-  globals.css                  Estilos globais e tema visual.
+  page.tsx                     Home publica.
+  simulacao/page.tsx           Simulador completo.
+  especialistas/page.tsx       Lista de especialistas.
+  especialistas/[slug]/page.tsx
   admin/
-    page.tsx                   Pagina protegida do painel.
-    login/page.tsx             Pagina de login administrativo.
+    page.tsx                   Painel protegido.
+    login/page.tsx             Login administrativo.
   api/
     admin/login/route.ts       API de login.
     admin/logout/route.ts      API de logout.
     campaigns/route.ts         API de campanhas.
-    leads/route.ts             API de interessados.
+    leads/route.ts             API de leads.
 
 components/
-  public-home.tsx              Interface publica, simulador e envio ao WhatsApp.
+  public-home.tsx              Home publica.
+  simulation-page.tsx          Simulador e envio de lead.
+  specialists-page.tsx         Pagina de especialistas.
+  specialist-card.tsx          Card de especialista.
   admin-dashboard.tsx          Painel administrativo.
   admin-login-form.tsx         Formulario de login.
-  ui/                          Componentes de UI base.
+  site-header.tsx              Navegacao publica.
+  site-footer.tsx              Rodape publico.
 
 lib/
-  consorcio.ts                 Tipos, campanhas padrao, formula e helpers.
-  admin-session.ts             Criacao, verificacao e remocao da sessao admin.
-  backend/repository.ts        Adaptador de dados em memoria.
-  utils.ts                     Helper de classes CSS.
+  contact.ts                   Validacao e deteccao de contato.
+  consorcio.ts                 Tipos, especialistas, campanhas e helpers.
+  admin-session.ts             Sessao administrativa local.
+  backend/
+    types.ts                   Contrato do repositorio.
+    repository.ts              Seletor de provider.
+    sqlite.ts                  Adaptador SQLite local.
+    supabase.ts                Adaptador Supabase/Postgres via REST.
 
 database/
-  schema.sql                   Modelo SQL para banco futuro.
+  migrations/001_initial_sqlite.sql
+  schema.sql                   Modelo Postgres/Supabase de referencia.
 
-public/
-  pedrao-consorcios-hero.png   Imagem principal.
-  favicon.svg                  Icone do site.
-  *.svg                        Assets publicos padrao.
-
-vendor/
-  shadcn-tailwind-4.13.0.css   CSS vendorizado usado pelo tema.
+scripts/
+  sync-specialist-media.mjs
+  api-smoke-tests.mjs
 ```
 
-## Frontend e Backend
+## Contrato de Dados
 
-O frontend fica principalmente em `components/public-home.tsx`, `components/admin-dashboard.tsx` e nas paginas dentro de `app/`.
+As rotas de API chamam apenas o contrato em `lib/backend/types.ts`. Isso permite trocar o provider sem alterar componentes visuais ou validacoes de rota.
 
-O backend fica nas rotas de API dentro de `app/api/`. Essas rotas recebem requisicoes HTTP, validam dados simples, verificam sessao quando necessario e chamam as funcoes do repositorio em `lib/backend/repository.ts`.
-
-Essa separacao permite trocar o armazenamento no futuro sem mudar os componentes visuais nem os contratos das APIs.
-
-## Paginas
-
-- `/`: renderizada por `app/page.tsx`, usa `PublicHome`.
-- `/admin/login`: renderizada por `app/admin/login/page.tsx`, usa `AdminLoginForm`.
-- `/admin`: renderizada por `app/admin/page.tsx`, verifica sessao com `hasAdminSession` e redireciona para login quando necessario.
-
-## APIs
-
-- `GET /api/campaigns`: lista campanhas ativas para a pagina publica.
-- `GET /api/campaigns?all=1`: lista todas as campanhas, exige sessao admin.
-- `POST /api/campaigns`: cria campanha, exige sessao admin.
-- `PATCH /api/campaigns`: atualiza `active` e `featured`, exige sessao admin.
-- `DELETE /api/campaigns?id=...`: remove campanha, exige sessao admin.
-- `GET /api/leads`: lista interessados, exige sessao admin.
-- `POST /api/leads`: cadastra interessado vindo do simulador.
-- `PATCH /api/leads`: atualiza etapa de atendimento, exige sessao admin.
-- `POST /api/admin/login`: cria sessao admin.
-- `POST /api/admin/logout`: remove sessao admin e redireciona para login.
-
-## Configuracoes
-
-As configuracoes principais estao em:
-
-- `package.json`: scripts, dependencias e versao minima de Node.js.
-- `.env.example`: modelo de variaveis de ambiente.
-- `.env.local`: valores locais reais, ignorados pelo Git.
-- `lib/consorcio.ts`: numero do WhatsApp, campanhas padrao, tipos e calculos.
-- `lib/admin-session.ts`: nomes internos de cookie e uso das variaveis de ambiente.
-- `app/globals.css`: tema visual e estilos globais.
-
-Variaveis esperadas:
-
-```env
-ADMIN_PASSWORD=troque-por-uma-senha-forte
-ADMIN_SESSION_SECRET=troque-por-uma-chave-aleatoria-longa
-```
-
-## Painel Administrativo
-
-O painel usa uma senha definida por `ADMIN_PASSWORD`. Ao fazer login, `createAdminSession` cria um cookie HTTP-only assinado com `ADMIN_SESSION_SECRET`.
-
-A pagina `/admin` sempre chama `hasAdminSession`. Se o cookie estiver ausente, invalido ou se as variaveis de ambiente nao estiverem configuradas, o usuario e redirecionado para `/admin/login`.
-
-As APIs administrativas tambem chamam `hasAdminSession`, mantendo o painel e os dados protegidos pelo mesmo mecanismo.
-
-## Adaptador de Dados
-
-O arquivo `lib/backend/repository.ts` implementa um armazenamento temporario em memoria usando `globalThis.pedraoMemoryStore`.
-
-Esse armazenamento facilita desenvolvimento local, mas os dados somem quando o servidor reinicia. Para usar banco persistente no futuro, substitua somente a implementacao das funcoes:
+Funcoes do contrato:
 
 ```text
 listCampaigns
@@ -131,7 +74,61 @@ updateCampaign
 removeCampaign
 listLeads
 createLead
-updateLeadStatus
+updateLead
 ```
 
-Mantenha os mesmos nomes, parametros e retornos para preservar os contratos usados pelas APIs e componentes.
+## Providers
+
+`lib/backend/repository.ts` escolhe o provider por `DATA_PROVIDER`.
+
+- `sqlite`: padrao em desenvolvimento. Usa `SQLITE_DB_PATH` ou `.local-data/recol-consorcio.sqlite`.
+- `supabase`: provider de producao preparado. Exige `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY`.
+
+Se `NODE_ENV=production` e `DATA_PROVIDER` nao for definido, o app usa `supabase`. Se as variaveis de producao estiverem ausentes, retorna erro claro em vez de cair para memoria.
+
+## SQLite Local
+
+O adaptador `lib/backend/sqlite.ts`:
+
+- cria o diretorio do banco quando necessario;
+- aplica migracoes de `database/migrations`;
+- cria tabelas de especialistas, campanhas e leads;
+- faz seed apenas dos especialistas centrais e campanhas padrao;
+- nao cria clientes ou leads falsos;
+- preserva leads e campanhas apos reinicio do servidor.
+
+Arquivos SQLite ficam ignorados pelo Git.
+
+## Configuracao Central
+
+`lib/consorcio.ts` concentra:
+
+- ids e slugs dos especialistas;
+- nome, descricao, Instagram, foto, video, WhatsApp, e-mail e status ativo;
+- campanhas padrao;
+- tipos de lead, status e temperatura;
+- calculo de parcela estimada;
+- helpers de exibicao e links.
+
+Dados nao confirmados permanecem vazios ou explicitamente pendentes.
+
+## APIs
+
+- `GET /api/campaigns`: lista campanhas ativas.
+- `GET /api/campaigns?all=1`: lista todas as campanhas, exige sessao admin.
+- `POST /api/campaigns`: cria campanha, exige sessao admin.
+- `PATCH /api/campaigns`: edita campanha, exige sessao admin.
+- `DELETE /api/campaigns?id=...`: remove campanha, exige sessao admin.
+- `GET /api/leads`: lista leads, exige sessao admin.
+- `POST /api/leads`: cadastra lead publico.
+- `PATCH /api/leads`: atualiza status, temperatura, responsavel ou observacoes, exige sessao admin.
+- `POST /api/admin/login`: cria sessao admin.
+- `POST /api/admin/logout`: remove sessao admin.
+
+## Sessao Administrativa
+
+O login usa `ADMIN_SESSION_SECRET` e pares de identificacao/senha por especialista. A sessao e gravada em cookie HTTP-only assinado. As APIs administrativas validam esse cookie antes de listar ou alterar dados.
+
+## Midias
+
+O app usa caminhos relativos em `public/media`. Arquivos locais externos, como `D:\img e videos`, entram apenas pelo script `npm run sync:media`, que copia arquivos reconhecidos para nomes estaveis e reporta ambiguidades.

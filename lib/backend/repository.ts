@@ -1,77 +1,54 @@
-import { DEFAULT_CAMPAIGNS, type Campaign, type Lead } from "@/lib/consorcio";
+import { createSqliteRepository } from "@/lib/backend/sqlite";
+import { createSupabaseRepository } from "@/lib/backend/supabase";
+import type { CampaignInput, CampaignUpdate, LeadInput, LeadUpdate, Repository } from "@/lib/backend/types";
+import type { SpecialistId } from "@/lib/consorcio";
 
-type CampaignInput = Omit<Campaign, "id" | "createdAt">;
-type LeadInput = Omit<Lead, "id" | "status" | "createdAt"> & { consent: boolean };
+export type { CampaignInput, CampaignUpdate, LeadInput, LeadUpdate } from "@/lib/backend/types";
 
-type MemoryStore = {
-  campaigns: Campaign[];
-  leads: Lead[];
-  nextCampaignId: number;
-  nextLeadId: number;
-};
+let repository: Repository | null = null;
 
-declare global {
-  var pedraoMemoryStore: MemoryStore | undefined;
+function providerName() {
+  return process.env.DATA_PROVIDER || (process.env.NODE_ENV === "production" ? "supabase" : "sqlite");
 }
 
-function getStore(): MemoryStore {
-  if (!globalThis.pedraoMemoryStore) {
-    globalThis.pedraoMemoryStore = {
-      campaigns: DEFAULT_CAMPAIGNS.map((item, index) => ({ ...item, id: index + 1 })),
-      leads: [],
-      nextCampaignId: DEFAULT_CAMPAIGNS.length + 1,
-      nextLeadId: 1,
-    };
+function getRepository() {
+  if (repository) return repository;
+  const provider = providerName();
+  if (provider === "sqlite") {
+    repository = createSqliteRepository();
+    return repository;
   }
-  return globalThis.pedraoMemoryStore;
+  if (provider === "supabase") {
+    repository = createSupabaseRepository();
+    return repository;
+  }
+  throw new Error(`DATA_PROVIDER inválido: ${provider}`);
 }
 
-// Adaptador temporário para desenvolvimento. Substitua estas funções pela
-// implementação do banco escolhido sem alterar os contratos das APIs.
 export async function listCampaigns(includeInactive = false) {
-  const items = getStore().campaigns.filter((item) => includeInactive || item.active);
-  return items.toSorted((a, b) => Number(b.featured) - Number(a.featured)).map((item) => ({ ...item }));
+  return getRepository().listCampaigns(includeInactive);
 }
 
 export async function createCampaign(input: CampaignInput) {
-  const store = getStore();
-  const id = store.nextCampaignId++;
-  store.campaigns.unshift({ ...input, id, createdAt: new Date().toISOString() });
-  return id;
+  return getRepository().createCampaign(input);
 }
 
-export async function updateCampaign(id: number, active: boolean, featured: boolean) {
-  const item = getStore().campaigns.find((campaign) => campaign.id === id);
-  if (item) Object.assign(item, { active, featured });
+export async function updateCampaign(id: number, changes: CampaignUpdate) {
+  return getRepository().updateCampaign(id, changes);
 }
 
 export async function removeCampaign(id: number) {
-  const store = getStore();
-  store.campaigns = store.campaigns.filter((campaign) => campaign.id !== id);
+  return getRepository().removeCampaign(id);
 }
 
 export async function listLeads() {
-  return getStore().leads.map((item) => ({ ...item }));
+  return getRepository().listLeads();
 }
 
 export async function createLead(input: LeadInput) {
-  const store = getStore();
-  const id = store.nextLeadId++;
-  store.leads.unshift({
-    id,
-    name: input.name,
-    phone: input.phone,
-    goal: input.goal,
-    credit: input.credit,
-    term: input.term,
-    estimatedInstallment: input.estimatedInstallment,
-    status: "novo",
-    createdAt: new Date().toISOString(),
-  });
-  return id;
+  return getRepository().createLead(input);
 }
 
-export async function updateLeadStatus(id: number, status: Lead["status"]) {
-  const item = getStore().leads.find((lead) => lead.id === id);
-  if (item) item.status = status;
+export async function updateLead(id: number, changes: LeadUpdate, updatedBy: SpecialistId) {
+  return getRepository().updateLead(id, changes, updatedBy);
 }

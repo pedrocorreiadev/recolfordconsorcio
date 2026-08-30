@@ -1,8 +1,38 @@
-import { createCampaign, listCampaigns, removeCampaign, updateCampaign } from "@/lib/backend/repository";
 import { hasAdminSession } from "@/lib/admin-session";
+import { createCampaign, listCampaigns, removeCampaign, updateCampaign, type CampaignUpdate } from "@/lib/backend/repository";
 import type { Goal } from "@/lib/consorcio";
 
+export const runtime = "nodejs";
+
 const validGoals: Goal[] = ["carro", "imovel", "moto"];
+
+function campaignInput(body: Record<string, unknown>) {
+  const segment = String(body.segment) as Goal;
+  return {
+    title: String(body.title ?? "").trim().slice(0, 120),
+    subtitle: String(body.subtitle ?? "").trim().slice(0, 240),
+    segment,
+    credit: Number(body.credit),
+    term: Number(body.term),
+    adminRate: Number(body.adminRate),
+    insuranceRate: Number(body.insuranceRate),
+    reducedPercent: Number(body.reducedPercent),
+    featured: Boolean(body.featured),
+    active: body.active !== false,
+  };
+}
+
+function validateCampaign(input: ReturnType<typeof campaignInput>) {
+  return Boolean(
+    input.title &&
+    validGoals.includes(input.segment) &&
+    input.credit >= 20000 &&
+    input.term >= 1 &&
+    Number.isFinite(input.adminRate) &&
+    Number.isFinite(input.insuranceRate) &&
+    Number.isFinite(input.reducedPercent),
+  );
+}
 
 export async function GET(request: Request) {
   try {
@@ -18,16 +48,8 @@ export async function POST(request: Request) {
   if (!(await hasAdminSession())) return Response.json({ error: "Não autorizado" }, { status: 401 });
   try {
     const body = await request.json() as Record<string, unknown>;
-    const segment = String(body.segment) as Goal;
-    const input = {
-      title: String(body.title ?? "").trim(), subtitle: String(body.subtitle ?? "").trim(), segment,
-      credit: Number(body.credit), term: Number(body.term), adminRate: Number(body.adminRate),
-      insuranceRate: Number(body.insuranceRate), reducedPercent: Number(body.reducedPercent),
-      featured: Boolean(body.featured), active: body.active !== false,
-    };
-    if (!input.title || !validGoals.includes(segment) || input.credit < 20000 || input.term < 1 || !Number.isFinite(input.adminRate) || !Number.isFinite(input.insuranceRate)) {
-      return Response.json({ error: "Revise os dados da campanha" }, { status: 400 });
-    }
+    const input = campaignInput(body);
+    if (!validateCampaign(input)) return Response.json({ error: "Revise os dados da campanha" }, { status: 400 });
     const id = await createCampaign(input);
     return Response.json({ id }, { status: 201 });
   } catch (error) {
@@ -37,16 +59,47 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   if (!(await hasAdminSession())) return Response.json({ error: "Não autorizado" }, { status: 401 });
-  const body = await request.json() as { id?: number; active?: boolean; featured?: boolean };
-  if (!body.id) return Response.json({ error: "Campanha inválida" }, { status: 400 });
-  await updateCampaign(body.id, Boolean(body.active), Boolean(body.featured));
-  return Response.json({ ok: true });
+  try {
+    const body = await request.json() as Record<string, unknown>;
+    const id = Number(body.id);
+    if (!id) return Response.json({ error: "Campanha inválida" }, { status: 400 });
+
+    const changes: CampaignUpdate = {};
+    if ("title" in body) changes.title = String(body.title ?? "").trim().slice(0, 120);
+    if ("subtitle" in body) changes.subtitle = String(body.subtitle ?? "").trim().slice(0, 240);
+    if ("segment" in body) {
+      const segment = String(body.segment) as Goal;
+      if (!validGoals.includes(segment)) return Response.json({ error: "Categoria inválida" }, { status: 400 });
+      changes.segment = segment;
+    }
+    if ("credit" in body) changes.credit = Number(body.credit);
+    if ("term" in body) changes.term = Number(body.term);
+    if ("adminRate" in body) changes.adminRate = Number(body.adminRate);
+    if ("insuranceRate" in body) changes.insuranceRate = Number(body.insuranceRate);
+    if ("reducedPercent" in body) changes.reducedPercent = Number(body.reducedPercent);
+    if ("featured" in body) changes.featured = Boolean(body.featured);
+    if ("active" in body) changes.active = Boolean(body.active);
+
+    if (changes.title !== undefined && !changes.title) return Response.json({ error: "Informe um título" }, { status: 400 });
+    if (changes.credit !== undefined && changes.credit < 20000) return Response.json({ error: "Crédito inválido" }, { status: 400 });
+    if (changes.term !== undefined && changes.term < 1) return Response.json({ error: "Prazo inválido" }, { status: 400 });
+
+    const campaign = await updateCampaign(id, changes);
+    if (!campaign) return Response.json({ error: "Campanha não encontrada" }, { status: 404 });
+    return Response.json({ ok: true, campaign });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Erro ao atualizar campanha" }, { status: 500 });
+  }
 }
 
 export async function DELETE(request: Request) {
   if (!(await hasAdminSession())) return Response.json({ error: "Não autorizado" }, { status: 401 });
-  const id = Number(new URL(request.url).searchParams.get("id"));
-  if (!id) return Response.json({ error: "Campanha inválida" }, { status: 400 });
-  await removeCampaign(id);
-  return Response.json({ ok: true });
+  try {
+    const id = Number(new URL(request.url).searchParams.get("id"));
+    if (!id) return Response.json({ error: "Campanha inválida" }, { status: 400 });
+    await removeCampaign(id);
+    return Response.json({ ok: true });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Erro ao remover campanha" }, { status: 500 });
+  }
 }

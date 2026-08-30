@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Pedrão Consórcios | Planeje sua próxima conquista",
+  title: "Recol Ford Consórcio | Simulação sem compromisso",
   description:
-    "Simule seu consórcio de automóveis, imóveis ou motocicletas e receba atendimento personalizado pelo WhatsApp.",
+    "Faça uma simulação sem compromisso de consórcio e receba atendimento da equipe de especialistas.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
@@ -17,7 +17,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="antialiased">{children}</body>
     </html>
   );

@@ -20,6 +20,11 @@
 # misc
 .DS_Store
 *.pem
+.local-notes/
+.local-data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
 
 # debug
 npm-debug.log*
@@ -36,6 +41,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+tsconfig.tsbuildinfo
 /dist/
 /.wrangler/
 /.sites-runtime/

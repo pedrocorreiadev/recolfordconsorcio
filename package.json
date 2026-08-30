@@ -1,5 +1,5 @@
 {
-  "name": "pedrao-consorcios",
+  "name": "recol-ford-consorcio",
   "version": "0.1.0",
   "private": true,
   "engines": {
@@ -9,7 +9,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint . --ignore-pattern .next"
+    "lint": "eslint . --ignore-pattern .next",
+    "typecheck": "tsc --noEmit",
+    "sync:media": "node scripts/sync-specialist-media.mjs",
+    "test:smoke": "node scripts/api-smoke-tests.mjs",
+    "test:persistence": "node scripts/api-persistence-check.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",
@@ -48,5 +52,5 @@
     "typescript": "5.9.3"
   },
   "type": "module",
-  "displayName": "Pedr\u00e3o Cons\u00f3rcios"
+  "displayName": "Recol Ford Cons\u00f3rcio"
 }

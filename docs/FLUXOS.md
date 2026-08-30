@@ -1,93 +1,89 @@
 # Fluxos
 
+## Home Publica
+
+1. O visitante abre `/`.
+2. `PublicHome` carrega campanhas por `GET /api/campaigns`.
+3. A home mostra atalhos de objetivo, campanhas ativas, especialistas e chamada para simulacao.
+4. Os atalhos direcionam para `/simulacao` com objetivo e credito inicial na URL.
+
 ## Simulacao de Consorcio
 
-1. O visitante abre `/`, que renderiza `PublicHome`.
-2. `PublicHome` inicia com campanhas padrao de `DEFAULT_CAMPAIGNS`.
-3. Ao carregar, a pagina chama `GET /api/campaigns`.
-4. Se a API retornar campanhas ativas, elas substituem as campanhas padrao no estado local.
-5. O visitante escolhe objetivo, credito, prazo e parcela reduzida.
-6. A campanha ativa do segmento define taxa administrativa, seguro mensal e percentual reduzido usados no calculo.
-7. A parcela estimada e recalculada sempre que objetivo, credito, prazo ou modalidade muda.
+1. O visitante abre `/simulacao`.
+2. `SimulationPage` le `goal` e `credit` da URL quando existirem.
+3. O visitante escolhe objetivo, credito, prazo e parcela reduzida.
+4. A campanha ativa do segmento define taxa administrativa, seguro mensal e percentual reduzido.
+5. A parcela estimada e recalculada no cliente.
+6. O aviso comercial informa que o resultado e uma estimativa inicial.
 
-## Calculo da Parcela
+## Cadastro de Lead
 
-1. `PublicHome` chama `calculateInstallment`.
-2. A funcao recebe `credit`, `term`, `adminRate`, `insuranceRate`, `reducedPercent` e `reduced`.
-3. O fundo com taxa administrativa e dividido pelo prazo.
-4. O seguro mensal estimado e calculado sobre o credito.
-5. A parcela cheia soma fundo/taxa e seguro.
-6. Se `reduced` estiver ativo, a parcela cheia e multiplicada pelo percentual reduzido.
-7. O resultado e exibido com `formatBRL`.
+1. O visitante informa nome e o campo unico `WhatsApp ou e-mail`.
+2. O especialista de preferencia e opcional.
+3. `detectContact` identifica e valida o contato:
+   - se contem `@`, valida como e-mail e salva `contactType: email`;
+   - caso contrario, normaliza como telefone e salva `contactType: whatsapp`.
+4. Erros de validacao nao limpam os campos ja preenchidos.
+5. A pagina envia `POST /api/leads`.
+6. A API valida nome, contato, objetivo, valores, prazo e especialista opcional.
+7. `createLead` salva o lead com `status: novo` e `temperature: nao_classificado`.
+8. Se houver especialista escolhido, o lead entra atribuido a ele.
+9. Se nao houver especialista escolhido, o lead fica nao atribuido.
 
-## Envio para o WhatsApp
+## Especialistas
 
-1. O visitante clica em "Receber planejamento no WhatsApp".
-2. `contactPedro` limpa nome e telefone digitados.
-3. A funcao monta uma mensagem com nome, objetivo, credito, prazo e parcela estimada.
-4. `whatsappUrl` cria a URL `wa.me` usando o numero configurado em `WHATSAPP_NUMBER`.
-5. `window.open` abre o WhatsApp em uma nova aba ou janela.
+1. Os especialistas ficam cadastrados em `SPECIALISTS`.
+2. `/especialistas` mostra a lista completa de especialistas ativos.
+3. `/especialistas/[slug]` mostra o perfil individual.
+4. O card usa foto quando o caminho existe e fallback de iniciais quando a imagem falha.
+5. Videos aparecem somente quando `videoPath` esta configurado.
+6. Instagram aparece para todos os especialistas configurados.
+7. WhatsApp e e-mail aparecem somente quando os campos existem no cadastro central.
 
-## Cadastro de Interessado
+## Sincronizacao de Midias
 
-1. Antes de abrir o WhatsApp, `contactPedro` verifica se nome e telefone foram preenchidos.
-2. Se houver dados suficientes, envia `POST /api/leads`.
-3. A API valida nome, telefone, objetivo, credito, prazo e consentimento.
-4. Se valido, `createLead` adiciona o interessado no armazenamento em memoria.
-5. O painel administrativo passa a listar esse lead em `GET /api/leads`.
-6. Se a chamada falhar, o envio ao WhatsApp continua; o cadastro apenas nao e salvo.
+1. Configure `LOCAL_MEDIA_SOURCE` no ambiente local.
+2. Execute `npm run sync:media`.
+3. O script procura imagens e videos reconhecidos por especialista.
+4. Arquivos reconhecidos sao copiados para `public/media/specialists/{id}`.
+5. Imagens usam nome estavel `profile.ext`.
+6. Videos usam nome estavel `intro.ext`.
+7. Quando ha mais de uma opcao para o mesmo especialista e tipo, o script reporta ambiguidade e nao sobrescreve.
 
 ## Login Administrativo
 
 1. O usuario acessa `/admin`.
-2. `app/admin/page.tsx` chama `hasAdminSession`.
+2. `app/admin/page.tsx` chama `getAdminSession`.
 3. Sem sessao valida, o usuario e redirecionado para `/admin/login`.
-4. O formulario `AdminLoginForm` envia `POST /api/admin/login`.
-5. A API chama `createAdminSession`.
-6. `createAdminSession` compara a senha recebida com `ADMIN_PASSWORD` usando HMAC e `timingSafeEqual`.
-7. Se estiver correta, grava o cookie administrativo assinado com `ADMIN_SESSION_SECRET`.
-8. O navegador volta para `/admin`, agora com sessao valida.
+4. `AdminLoginForm` envia identificacao e senha para `POST /api/admin/login`.
+5. `createAdminSession` compara os dados com variaveis de ambiente.
+6. Se estiver correto, grava cookie HTTP-only assinado.
+7. O painel recebe o administrador conectado e mostra seu nome no cabecalho.
 
-## Criacao e Atualizacao de Campanhas
+## Gestao de Leads
 
-1. No painel, `AdminDashboard` chama `loadData`.
-2. `loadData` busca `GET /api/campaigns?all=1`, que exige sessao admin.
-3. Na aba "Nova campanha", o usuario preenche titulo, descricao, categoria, credito, prazo e taxas.
-4. `saveCampaign` envia `POST /api/campaigns`.
-5. A API valida os dados e chama `createCampaign`.
-6. A campanha criada entra no armazenamento em memoria.
-7. O painel recarrega os dados.
-8. Para publicar/ocultar ou destacar, os switches chamam `changeCampaign`.
-9. `changeCampaign` envia `PATCH /api/campaigns`, que chama `updateCampaign`.
-10. A pagina publica usa as campanhas ativas na proxima busca.
+1. O painel carrega campanhas e leads.
+2. Administradores visualizam todos os leads.
+3. Filtros locais separam por temperatura, situacao e responsavel.
+4. Um administrador pode assumir lead nao atribuido.
+5. O responsavel pode ser transferido para outro especialista ou removido.
+6. Status, temperatura e observacoes sao atualizados por `PATCH /api/leads`.
+7. A rota registra `updatedAt` e `updatedBy` usando a sessao atual.
+8. O botao de contato abre WhatsApp para `contactType: whatsapp` e `mailto:` para `contactType: email`.
 
-## Alteracao da Etapa de Atendimento
+## Campanhas
 
-1. O painel lista leads carregados por `GET /api/leads`.
-2. Na coluna "Etapa", o usuario escolhe novo status.
-3. `changeLeadStatus` envia `PATCH /api/leads`.
-4. A API valida se o status pertence a lista permitida.
-5. `updateLeadStatus` atualiza o lead em memoria.
-6. O painel atualiza o estado local e exibe notificacao de sucesso.
+1. `GET /api/campaigns` alimenta o site publico com campanhas ativas.
+2. `GET /api/campaigns?all=1` alimenta o painel com campanhas ativas e inativas.
+3. O painel cria campanhas por `POST /api/campaigns`.
+4. O painel edita titulo, objetivo, descricao, credito, prazos, taxas, ativo e destaque por `PATCH /api/campaigns`.
+5. O painel exclui campanhas por `DELETE /api/campaigns`.
+6. As alteracoes persistem no SQLite local quando `DATA_PROVIDER=sqlite`.
 
-## Fluxo Futuro com Banco Persistente
+## Persistencia Local
 
-1. Criar um banco usando o modelo em `database/schema.sql`.
-2. Configurar credenciais no ambiente de deploy.
-3. Instalar o cliente do banco escolhido somente quando a integracao for feita.
-4. Substituir a implementacao interna de `lib/backend/repository.ts`.
-5. Manter os mesmos contratos das funcoes do repositorio.
-6. Preservar as rotas de API como camada de validacao e autorizacao.
-7. Testar novamente `npm run lint` e `npm run build`.
-
-As funcoes que formam o contrato a preservar sao:
-
-```text
-listCampaigns
-createCampaign
-updateCampaign
-removeCampaign
-listLeads
-createLead
-updateLeadStatus
-```
+1. O primeiro acesso ao repositorio SQLite cria o banco local.
+2. Migracoes sao aplicadas a partir de `database/migrations`.
+3. Especialistas centrais sao inseridos ou atualizados.
+4. Campanhas padrao sao criadas apenas quando a tabela esta vazia.
+5. Leads e campanhas criados pelo usuario permanecem depois de reiniciar o servidor.
