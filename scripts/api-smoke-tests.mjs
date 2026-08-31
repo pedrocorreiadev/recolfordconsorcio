@@ -37,16 +37,39 @@ function contactLinks(lead) {
 
 loadLocalEnv();
 
-const identifier = process.env.ADMIN_FLAVIO_IDENTIFIER;
-const password = process.env.ADMIN_FLAVIO_PASSWORD;
-assert(identifier, "ADMIN_FLAVIO_IDENTIFIER ausente");
-assert(password, "ADMIN_FLAVIO_PASSWORD ausente");
+function adminLoginCredentials() {
+  if (process.env.DEMO_ADMIN_ENABLED === "true") {
+    return {
+      identifier: process.env.ADMIN_DEMO_IDENTIFIER,
+      password: process.env.ADMIN_DEMO_PASSWORD,
+      expectedId: "demo",
+    };
+  }
+
+  return {
+    identifier: process.env.ADMIN_FLAVIO_IDENTIFIER,
+    password: process.env.ADMIN_FLAVIO_PASSWORD,
+    expectedId: "flavio",
+  };
+}
+
+const { identifier, password, expectedId } = adminLoginCredentials();
+assert(identifier, "identificacao administrativa ausente");
+assert(password, "senha administrativa ausente");
+
+const unauthorizedLeads = await request("/api/leads");
+assert.equal(unauthorizedLeads.response.status, 401, "listar leads sem sessao deve falhar");
+
+const unauthorizedCampaigns = await request("/api/campaigns?all=1");
+assert.equal(unauthorizedCampaigns.response.status, 401, "listar campanhas internas sem sessao deve falhar");
 
 const login = await request("/api/admin/login", {
   method: "POST",
   body: JSON.stringify({ identifier, password }),
 });
 assert.equal(login.response.status, 200, "login administrativo");
+assert.equal(login.data.admin.id, expectedId, "admin autenticado esperado");
+assert.equal("password" in login.data.admin, false, "senha nao deve voltar na resposta");
 const cookie = login.response.headers.get("set-cookie")?.split(";")[0];
 assert(cookie, "cookie de sessão ausente");
 
@@ -97,6 +120,12 @@ assert.equal(createdWhatsapp?.temperature, "nao_classificado", "temperatura inic
 assert(contactLinks(createdWhatsapp).startsWith("https://wa.me/"), "link WhatsApp válido");
 assert(contactLinks(createdEmail).startsWith("mailto:"), "link mailto válido");
 
+const unauthorizedPatch = await request("/api/leads", {
+  method: "PATCH",
+  body: JSON.stringify({ id: whatsappLead.data.id, status: "contatado" }),
+});
+assert.equal(unauthorizedPatch.response.status, 401, "alterar lead sem sessao deve falhar");
+
 const assume = await request("/api/leads", {
   method: "PATCH",
   headers: { cookie },
@@ -121,6 +150,7 @@ const notes = await request("/api/leads", {
 assert.equal(notes.response.status, 200, "editar observação/status/temperatura");
 assert.equal(notes.data.lead.status, "contatado");
 assert.equal(notes.data.lead.temperature, "quente");
+assert.equal(notes.data.lead.updatedBy, expectedId, "ultima acao deve registrar admin atual");
 
 const campaign = await request("/api/campaigns", {
   method: "POST",
@@ -186,5 +216,30 @@ assert(
   !campaignsAfterDelete.data.campaigns.some((item) => item.id === campaignToDelete.data.id),
   "campanha excluida nao deve aparecer na lista",
 );
+
+const deleteUpdatedCampaign = await request(`/api/campaigns?id=${campaign.data.id}`, {
+  method: "DELETE",
+  headers: { cookie },
+});
+assert.equal(deleteUpdatedCampaign.response.status, 200, "limpar campanha atualizada");
+
+const deleteWhatsappLead = await request(`/api/leads?id=${whatsappLead.data.id}`, {
+  method: "DELETE",
+  headers: { cookie },
+});
+assert.equal(deleteWhatsappLead.response.status, 200, "limpar lead WhatsApp");
+
+const deleteEmailLead = await request(`/api/leads?id=${emailLead.data.id}`, {
+  method: "DELETE",
+  headers: { cookie },
+});
+assert.equal(deleteEmailLead.response.status, 200, "limpar lead e-mail");
+
+const logout = await request("/api/admin/logout", {
+  method: "POST",
+  headers: { cookie },
+  redirect: "manual",
+});
+assert.equal(logout.response.status, 303, "logout administrativo");
 
 console.log("Smoke tests OK");

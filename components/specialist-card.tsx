@@ -56,8 +56,10 @@ export function SpecialistCard({ specialist, name, compact = false }: { speciali
       </div>
       <h3 className="mt-6 text-2xl font-black">{specialist.name}</h3>
       <p className="mt-1 text-sm font-bold text-[#0b2d5c]">{specialist.instagramUser}</p>
-      <p className={`mt-4 leading-7 text-[#69798d] ${compact ? "min-h-20" : ""}`}>{specialist.description}</p>
-      {specialist.videoPath && (
+      {specialist.description && (
+        <p className={`mt-4 leading-7 text-[#69798d] ${compact ? "min-h-20" : ""}`}>{specialist.description}</p>
+      )}
+      {!compact && specialist.videoPath && (
         <div className="mt-5 overflow-hidden rounded-2xl border border-[#dce5f0] bg-[#071b38]">
           <video controls preload="metadata" className="aspect-video w-full bg-[#071b38]" src={specialist.videoPath} />
         </div>

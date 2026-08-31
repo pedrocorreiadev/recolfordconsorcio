@@ -1,4 +1,4 @@
-import type { Campaign, Goal, Lead, LeadStatus, LeadTemperature, SpecialistId } from "@/lib/consorcio";
+import type { AdminActorId, Campaign, Goal, Lead, LeadStatus, LeadTemperature, SpecialistId } from "@/lib/consorcio";
 import type { CampaignInput, CampaignUpdate, LeadInput, LeadUpdate, Repository } from "@/lib/backend/types";
 
 type Row = Record<string, unknown>;
@@ -6,14 +6,14 @@ type Row = Record<string, unknown>;
 function settings() {
   return {
     url: process.env.SUPABASE_URL ?? "",
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? "",
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.SUPABASE_SECRET_KEY ?? "",
   };
 }
 
 function assertConfigured() {
   const config = settings();
   if (!config.url || !config.serviceRoleKey) {
-    throw new Error("Banco de produção não configurado. Defina SUPABASE_URL e SUPABASE_SERVICE_ROLE_KEY no servidor.");
+    throw new Error("Banco de produção não configurado. Defina SUPABASE_URL e a chave server-only do Supabase no servidor.");
   }
   return config;
 }
@@ -89,8 +89,36 @@ function leadFromRow(row: Row): Lead {
     adminNotes: String(row.admin_notes ?? ""),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
-    updatedBy: row.updated_by ? String(row.updated_by) as SpecialistId : null,
+    updatedBy: row.updated_by ? String(row.updated_by) as AdminActorId : null,
   };
+}
+
+async function currentLeadAssignment(id: number) {
+  const rows = await request(`leads?select=assigned_specialist_id&id=eq.${id}&limit=1`) as Row[];
+  const value = rows[0]?.assigned_specialist_id;
+  return value ? String(value) as SpecialistId : null;
+}
+
+async function recordLeadTransfer({
+  leadId,
+  fromSpecialistId,
+  toSpecialistId,
+  adminId,
+}: {
+  leadId: number;
+  fromSpecialistId: SpecialistId | null;
+  toSpecialistId: SpecialistId | null;
+  adminId: AdminActorId;
+}) {
+  await request("lead_transfers", {
+    method: "POST",
+    body: JSON.stringify({
+      lead_id: leadId,
+      from_specialist_id: fromSpecialistId,
+      to_specialist_id: toSpecialistId,
+      admin_id: adminId,
+    }),
+  });
 }
 
 export function createSupabaseRepository(): Repository {
@@ -147,7 +175,9 @@ export function createSupabaseRepository(): Repository {
       return Number(rows[0]?.id);
     },
 
-    async updateLead(id: number, changes: LeadUpdate, updatedBy: SpecialistId) {
+    async updateLead(id: number, changes: LeadUpdate, updatedBy: AdminActorId) {
+      const shouldRecordTransfer = changes.assignedSpecialistId !== undefined;
+      const previousAssignedSpecialistId = shouldRecordTransfer ? await currentLeadAssignment(id) : null;
       const rows = await request(`leads?id=eq.${id}`, {
         method: "PATCH",
         body: JSON.stringify({
@@ -159,7 +189,25 @@ export function createSupabaseRepository(): Repository {
           updated_at: new Date().toISOString(),
         }),
       }) as Row[];
-      return rows[0] ? leadFromRow(rows[0]) : null;
+      const lead = rows[0] ? leadFromRow(rows[0]) : null;
+      if (
+        shouldRecordTransfer &&
+        lead &&
+        previousAssignedSpecialistId !== lead.assignedSpecialistId
+      ) {
+        await recordLeadTransfer({
+          leadId: id,
+          fromSpecialistId: previousAssignedSpecialistId,
+          toSpecialistId: lead.assignedSpecialistId,
+          adminId: updatedBy,
+        });
+      }
+      return lead;
+    },
+
+    async removeLead(id: number) {
+      await request(`lead_transfers?lead_id=eq.${id}`, { method: "DELETE" });
+      await request(`leads?id=eq.${id}`, { method: "DELETE" });
     },
   };
 }

@@ -1,5 +1,5 @@
 import { getAdminSession, hasAdminSession } from "@/lib/admin-session";
-import { createLead, listLeads, updateLead, type LeadUpdate } from "@/lib/backend/repository";
+import { createLead, listLeads, removeLead, updateLead, type LeadUpdate } from "@/lib/backend/repository";
 import { detectContact } from "@/lib/contact";
 import {
   LEAD_STATUSES,
@@ -17,6 +17,8 @@ const goals: Goal[] = ["carro", "imovel", "moto"];
 const statuses = LEAD_STATUSES.map((item) => item.value);
 const temperatures = LEAD_TEMPERATURES.map((item) => item.value);
 const specialistIds = SPECIALISTS.map((item) => item.id);
+const PUBLIC_REQUEST_ERROR =
+  "Não foi possível concluir sua solicitação neste momento. Tente novamente em instantes ou entre em contato com um de nossos especialistas.";
 
 function isLeadStatus(value: string): value is LeadStatus {
   return statuses.includes(value as LeadStatus);
@@ -57,7 +59,9 @@ export async function POST(request: Request) {
     if (!contact.ok) return Response.json({ error: contact.error }, { status: 400 });
     if (
       !goals.includes(input.goal) ||
+      !Number.isFinite(input.credit) ||
       input.credit < 20000 ||
+      !Number.isFinite(input.term) ||
       input.term < 1 ||
       !Number.isFinite(input.estimatedInstallment)
     ) {
@@ -70,8 +74,8 @@ export async function POST(request: Request) {
       contactType: contact.contactType,
     });
     return Response.json({ id }, { status: 201 });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Erro ao salvar lead" }, { status: 500 });
+  } catch {
+    return Response.json({ error: PUBLIC_REQUEST_ERROR }, { status: 500 });
   }
 }
 
@@ -120,5 +124,17 @@ export async function PATCH(request: Request) {
     return Response.json({ ok: true, lead });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Erro ao atualizar lead" }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request) {
+  if (!(await hasAdminSession())) return Response.json({ error: "Não autorizado" }, { status: 401 });
+  try {
+    const id = Number(new URL(request.url).searchParams.get("id"));
+    if (!Number.isInteger(id) || id <= 0) return Response.json({ error: "Lead inválido" }, { status: 400 });
+    await removeLead(id);
+    return Response.json({ ok: true });
+  } catch (error) {
+    return Response.json({ error: error instanceof Error ? error.message : "Erro ao remover lead" }, { status: 500 });
   }
 }

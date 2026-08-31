@@ -5,6 +5,7 @@ import { DatabaseSync, type SQLInputValue, type StatementSync } from "node:sqlit
 import {
   DEFAULT_CAMPAIGNS,
   SPECIALISTS,
+  type AdminActorId,
   type Campaign,
   type Goal,
   type Lead,
@@ -147,7 +148,7 @@ function leadFromRow(row: Row): Lead {
     adminNotes: String(row.admin_notes ?? ""),
     createdAt: String(row.created_at),
     updatedAt: String(row.updated_at),
-    updatedBy: row.updated_by ? String(row.updated_by) as SpecialistId : null,
+    updatedBy: row.updated_by ? String(row.updated_by) as AdminActorId : null,
   };
 }
 
@@ -169,6 +170,21 @@ function getCampaign(db: DatabaseSync, id: number) {
 function getLead(db: DatabaseSync, id: number) {
   const row = db.prepare("select * from leads where id = ?").get(id) as Row | undefined;
   return row ? leadFromRow(row) : null;
+}
+
+function recordLeadTransfer(
+  db: DatabaseSync,
+  leadId: number,
+  fromSpecialistId: SpecialistId | null,
+  toSpecialistId: SpecialistId | null,
+  adminId: AdminActorId,
+) {
+  db.prepare(`
+    insert into lead_transfers (
+      lead_id, from_specialist_id, to_specialist_id, admin_id, created_at
+    )
+    values (?, ?, ?, ?, datetime('now'))
+  `).run(leadId, fromSpecialistId, toSpecialistId, adminId);
 }
 
 function runStatement(statement: StatementSync, values: unknown[]) {
@@ -258,8 +274,10 @@ export function createSqliteRepository(): Repository {
       return Number(result.lastInsertRowid);
     },
 
-    async updateLead(id: number, changes: LeadUpdate, updatedBy: SpecialistId) {
+    async updateLead(id: number, changes: LeadUpdate, updatedBy: AdminActorId) {
       const db = ensureDatabase();
+      const shouldRecordTransfer = changes.assignedSpecialistId !== undefined;
+      const previousLead = shouldRecordTransfer ? getLead(db, id) : null;
       const update = patchSql("leads", id, {
         ...(changes.status !== undefined ? { status: changes.status } : {}),
         ...(changes.temperature !== undefined ? { temperature: changes.temperature } : {}),
@@ -269,7 +287,28 @@ export function createSqliteRepository(): Repository {
       });
       if (!update) return getLead(db, id);
       runStatement(db.prepare(update.sql), update.values);
-      return getLead(db, id);
+      const updatedLead = getLead(db, id);
+      if (
+        shouldRecordTransfer &&
+        previousLead &&
+        updatedLead &&
+        previousLead.assignedSpecialistId !== updatedLead.assignedSpecialistId
+      ) {
+        recordLeadTransfer(
+          db,
+          id,
+          previousLead.assignedSpecialistId,
+          updatedLead.assignedSpecialistId,
+          updatedBy,
+        );
+      }
+      return updatedLead;
+    },
+
+    async removeLead(id: number) {
+      const db = ensureDatabase();
+      db.prepare("delete from lead_transfers where lead_id = ?").run(id);
+      db.prepare("delete from leads where id = ?").run(id);
     },
   };
 }

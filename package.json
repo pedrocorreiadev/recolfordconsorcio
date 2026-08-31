@@ -13,7 +13,8 @@
     "typecheck": "tsc --noEmit",
     "sync:media": "node scripts/sync-specialist-media.mjs",
     "test:smoke": "node scripts/api-smoke-tests.mjs",
-    "test:persistence": "node scripts/api-persistence-check.mjs"
+    "test:persistence": "node scripts/api-persistence-check.mjs",
+    "test:supabase": "node --experimental-transform-types scripts/supabase-repository-contract.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

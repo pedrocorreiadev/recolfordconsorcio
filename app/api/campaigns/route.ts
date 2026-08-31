@@ -5,6 +5,8 @@ import type { Goal } from "@/lib/consorcio";
 export const runtime = "nodejs";
 
 const validGoals: Goal[] = ["carro", "imovel", "moto"];
+const PUBLIC_REQUEST_ERROR =
+  "Não foi possível concluir sua solicitação neste momento. Tente novamente em instantes ou entre em contato com um de nossos especialistas.";
 
 function campaignInput(body: Record<string, unknown>) {
   const segment = String(body.segment) as Goal;
@@ -26,7 +28,9 @@ function validateCampaign(input: ReturnType<typeof campaignInput>) {
   return Boolean(
     input.title &&
     validGoals.includes(input.segment) &&
+    Number.isFinite(input.credit) &&
     input.credit >= 20000 &&
+    Number.isInteger(input.term) &&
     input.term >= 1 &&
     Number.isFinite(input.adminRate) &&
     Number.isFinite(input.insuranceRate) &&
@@ -35,12 +39,22 @@ function validateCampaign(input: ReturnType<typeof campaignInput>) {
 }
 
 export async function GET(request: Request) {
+  const includeInactive = new URL(request.url).searchParams.get("all") === "1";
   try {
-    const includeInactive = new URL(request.url).searchParams.get("all") === "1";
     if (includeInactive && !(await hasAdminSession())) return Response.json({ error: "Não autorizado" }, { status: 401 });
-    return Response.json({ campaigns: await listCampaigns(includeInactive) });
-  } catch (error) {
-    return Response.json({ error: error instanceof Error ? error.message : "Erro ao carregar campanhas" }, { status: 500 });
+    return Response.json(
+      { campaigns: await listCampaigns(includeInactive) },
+      {
+        headers: {
+          "cache-control": includeInactive ? "no-store" : "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      },
+    );
+  } catch {
+    return Response.json(
+      { error: includeInactive ? "Erro ao carregar campanhas" : PUBLIC_REQUEST_ERROR },
+      { status: 500, headers: { "cache-control": "no-store" } },
+    );
   }
 }
 
@@ -81,8 +95,11 @@ export async function PATCH(request: Request) {
     if ("active" in body) changes.active = Boolean(body.active);
 
     if (changes.title !== undefined && !changes.title) return Response.json({ error: "Informe um título" }, { status: 400 });
-    if (changes.credit !== undefined && changes.credit < 20000) return Response.json({ error: "Crédito inválido" }, { status: 400 });
-    if (changes.term !== undefined && changes.term < 1) return Response.json({ error: "Prazo inválido" }, { status: 400 });
+    if (changes.credit !== undefined && (!Number.isFinite(changes.credit) || changes.credit < 20000)) return Response.json({ error: "Crédito inválido" }, { status: 400 });
+    if (changes.term !== undefined && (!Number.isInteger(changes.term) || changes.term < 1)) return Response.json({ error: "Prazo inválido" }, { status: 400 });
+    if (changes.adminRate !== undefined && !Number.isFinite(changes.adminRate)) return Response.json({ error: "Taxa administrativa inválida" }, { status: 400 });
+    if (changes.insuranceRate !== undefined && !Number.isFinite(changes.insuranceRate)) return Response.json({ error: "Seguro inválido" }, { status: 400 });
+    if (changes.reducedPercent !== undefined && !Number.isFinite(changes.reducedPercent)) return Response.json({ error: "Parcela reduzida inválida" }, { status: 400 });
 
     const campaign = await updateCampaign(id, changes);
     if (!campaign) return Response.json({ error: "Campanha não encontrada" }, { status: 404 });

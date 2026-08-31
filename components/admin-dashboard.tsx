@@ -34,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Toaster } from "@/components/ui/sonner";
 import type { AdminSession } from "@/lib/admin-session";
 import {
+  adminActorName,
   formatBRL,
   goalLabel,
   LEAD_STATUSES,
@@ -269,14 +270,14 @@ export function AdminDashboard({ currentAdmin }: { currentAdmin: AdminSession })
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {contactButton(lead)}
-                          {!lead.assignedSpecialistId && <Button size="sm" variant="outline" onClick={() => void patchLead(lead.id, { assignedSpecialistId: currentAdmin.id }, "Lead assumido")}><UserCheck /> Assumir</Button>}
+                          {!lead.assignedSpecialistId && currentAdmin.specialistId && <Button size="sm" variant="outline" onClick={() => void patchLead(lead.id, { assignedSpecialistId: currentAdmin.specialistId }, "Lead assumido")}><UserCheck /> Assumir</Button>}
                         </div>
                       </div>
                       <div className="mt-5 grid gap-4 lg:grid-cols-4">
                         <label className="space-y-2"><span className="text-xs font-bold uppercase tracking-wide text-[#748398]">Situação</span><Select value={lead.status} onValueChange={(value) => void patchLead(lead.id, { status: value as LeadStatus }, "Situação atualizada")}><SelectTrigger className="h-11 w-full"><SelectValue /></SelectTrigger><SelectContent>{LEAD_STATUSES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></label>
                         <label className="space-y-2"><span className="text-xs font-bold uppercase tracking-wide text-[#748398]">Temperatura</span><Select value={lead.temperature} onValueChange={(value) => void patchLead(lead.id, { temperature: value as LeadTemperature }, "Temperatura atualizada")}><SelectTrigger className="h-11 w-full"><SelectValue /></SelectTrigger><SelectContent>{LEAD_TEMPERATURES.map((item) => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}</SelectContent></Select></label>
                         <label className="space-y-2"><span className="text-xs font-bold uppercase tracking-wide text-[#748398]">Responsável</span><Select value={lead.assignedSpecialistId ?? "unassigned"} onValueChange={(value) => void patchLead(lead.id, { assignedSpecialistId: value === "unassigned" ? null : value as SpecialistId }, "Responsável atualizado")}><SelectTrigger className="h-11 w-full"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unassigned">Não atribuído</SelectItem>{SPECIALISTS.map((specialist) => <SelectItem key={specialist.id} value={specialist.id}>{specialist.name}</SelectItem>)}</SelectContent></Select></label>
-                        <div className="rounded-2xl bg-[#f8fafc] p-4 text-sm leading-6"><strong className="block text-xs uppercase tracking-wide text-[#748398]">Dados</strong><span className="block">Tipo: {lead.contactType === "email" ? "E-mail" : "WhatsApp"}</span><span className="block">Preferência: {specialistName(lead.preferredSpecialistId)}</span><span className="block">Responsável: {specialistName(lead.assignedSpecialistId)}</span>{lead.updatedBy && <span className="block">Última ação: {specialistName(lead.updatedBy)}</span>}<span className="block">Atualizado: {new Date(lead.updatedAt).toLocaleString("pt-BR")}</span></div>
+                        <div className="rounded-2xl bg-[#f8fafc] p-4 text-sm leading-6"><strong className="block text-xs uppercase tracking-wide text-[#748398]">Dados</strong><span className="block">Tipo: {lead.contactType === "email" ? "E-mail" : "WhatsApp"}</span><span className="block">Preferência: {specialistName(lead.preferredSpecialistId)}</span><span className="block">Responsável: {specialistName(lead.assignedSpecialistId)}</span>{lead.updatedBy && <span className="block">Última ação: {adminActorName(lead.updatedBy)}</span>}<span className="block">Atualizado: {new Date(lead.updatedAt).toLocaleString("pt-BR")}</span></div>
                       </div>
                       <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto] md:items-end">
                         <label className="space-y-2"><span className="text-xs font-bold uppercase tracking-wide text-[#748398]">Observações administrativas</span><Textarea value={noteDrafts[lead.id] ?? ""} onChange={(event) => setNoteDrafts((current) => ({ ...current, [lead.id]: event.target.value }))} className="min-h-24 resize-y" placeholder="Registre próximos passos, contexto e combinações do atendimento." /></label>
@@ -330,7 +331,7 @@ export function AdminDashboard({ currentAdmin }: { currentAdmin: AdminSession })
           </TabsContent>
         </Tabs>
 
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#dce5f0] bg-white p-5 text-sm"><p className="text-[#718095]">As alterações do painel passam a valer no simulador público durante esta sessão local.</p><Link href="/" className="flex items-center gap-2 font-bold text-[#0b2d5c]">Abrir site <ExternalLink className="size-4" /></Link></div>
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-2xl border border-[#dce5f0] bg-white p-5 text-sm"><p className="text-[#718095]">As alterações salvas no painel passam a valer no simulador público.</p><Link href="/" className="flex items-center gap-2 font-bold text-[#0b2d5c]">Abrir site <ExternalLink className="size-4" /></Link></div>
       </div>
     </main>
   );

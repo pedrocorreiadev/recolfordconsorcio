@@ -1,3 +1,5 @@
+begin;
+
 create table if not exists specialists (
   id text primary key check (id in ('flavio', 'jessica', 'jersey')),
   slug text not null unique,
@@ -92,6 +94,17 @@ create table if not exists leads (
 );
 
 alter table if exists leads drop constraint if exists leads_updated_by_fkey;
+alter table leads add column if not exists contact_value text;
+alter table leads add column if not exists contact_type text;
+alter table leads add column if not exists status text default 'novo';
+alter table leads add column if not exists temperature text default 'nao_classificado';
+alter table leads add column if not exists assigned_specialist_id text references specialists(id);
+alter table leads add column if not exists admin_notes text default '';
+alter table leads add column if not exists updated_by text;
+alter table leads add column if not exists updated_at timestamptz default now();
+alter table leads alter column status set default 'novo';
+alter table leads alter column temperature set default 'nao_classificado';
+alter table leads alter column admin_notes set default '';
 
 create table if not exists lead_transfers (
   id bigint generated always as identity primary key,
@@ -113,3 +126,5 @@ alter table specialists enable row level security;
 alter table campaigns enable row level security;
 alter table leads enable row level security;
 alter table lead_transfers enable row level security;
+
+commit;

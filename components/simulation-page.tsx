@@ -29,6 +29,8 @@ import {
 
 const specialists = activeSpecialists();
 const validGoals: Goal[] = ["carro", "imovel", "moto"];
+const PUBLIC_REQUEST_ERROR =
+  "Não foi possível concluir sua solicitação neste momento. Tente novamente em instantes ou entre em contato com um de nossos especialistas.";
 
 type LeadForm = {
   name: string;
@@ -114,7 +116,6 @@ export function SimulationPage() {
         body: JSON.stringify({
           name: leadForm.name.trim(),
           contactValue: contact.contactValue,
-          contactType: contact.contactType,
           preferredSpecialistId:
             leadForm.preferredSpecialistId === "unassigned" ? null : leadForm.preferredSpecialistId,
           goal,
@@ -125,12 +126,12 @@ export function SimulationPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        setErrors({ submit: data.error ?? "Não foi possível salvar a simulação." });
+        setErrors({ submit: typeof data.error === "string" ? data.error : PUBLIC_REQUEST_ERROR });
         return;
       }
       setSubmitted(true);
     } catch {
-      setErrors({ submit: "Não foi possível salvar a simulação. Tente novamente." });
+      setErrors({ submit: PUBLIC_REQUEST_ERROR });
     } finally {
       setSubmitting(false);
     }
@@ -158,8 +159,8 @@ export function SimulationPage() {
             <div className="mt-5 rounded-[24px] bg-[#0b2d5c] p-6 text-white sm:p-7"><div className="flex flex-wrap items-center justify-between gap-4"><div><span className="text-sm font-semibold text-white/65">Parcela mensal estimada</span><strong className="mt-1 block text-4xl font-black tracking-tight text-[#ffd16d]">{formatBRL(installment)}</strong></div><span className="rounded-xl border border-white/15 bg-white/10 px-4 py-2 text-xs font-bold">{term} parcelas</span></div><p className="mt-4 border-t border-white/10 pt-4 text-xs leading-5 text-white/55">Cálculo ilustrativo com taxa administrativa de {activeCampaign.adminRate}% e seguro mensal estimado de {activeCampaign.insuranceRate}%.</p><p className="mt-3 text-xs leading-5 text-white/70">Esta é uma estimativa inicial. Para uma simulação mais detalhada, entre em contato com um dos nossos especialistas.</p></div>
 
             <div className="mt-6 grid gap-4 sm:grid-cols-2">
-              <FieldError label="Seu nome" error={errors.name}><Input value={leadForm.name} onChange={(event) => updateLeadForm("name", event.target.value)} placeholder="Como podemos te chamar?" className="h-12 rounded-xl bg-white" /></FieldError>
-              <FieldError label="WhatsApp ou e-mail" error={errors.contact}><Input value={leadForm.contact} onChange={(event) => updateLeadForm("contact", event.target.value)} placeholder="Digite seu WhatsApp ou e-mail" className="h-12 rounded-xl bg-white" /></FieldError>
+              <FieldError label="Seu nome" error={errors.name}><Input value={leadForm.name} onChange={(event) => updateLeadForm("name", event.target.value)} placeholder="Como podemos te chamar?" className="h-12 rounded-xl bg-white" required /></FieldError>
+              <FieldError label="WhatsApp ou e-mail" error={errors.contact}><Input value={leadForm.contact} onChange={(event) => updateLeadForm("contact", event.target.value)} placeholder="Digite seu WhatsApp ou e-mail" className="h-12 rounded-xl bg-white" required /></FieldError>
               <label className="space-y-2 sm:col-span-2"><span className="text-sm font-extrabold">Especialista de preferência</span><Select value={leadForm.preferredSpecialistId} onValueChange={(value) => updateLeadForm("preferredSpecialistId", value as SpecialistId | "unassigned")}><SelectTrigger className="h-12 w-full rounded-xl bg-white"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="unassigned">Sem preferência</SelectItem>{specialists.map((specialist) => <SelectItem key={specialist.id} value={specialist.id}>{specialist.name}</SelectItem>)}</SelectContent></Select></label>
             </div>
 

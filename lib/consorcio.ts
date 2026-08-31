@@ -1,6 +1,7 @@
 export type Goal = "carro" | "imovel" | "moto";
 
 export type SpecialistId = "flavio" | "jessica" | "jersey";
+export type AdminActorId = SpecialistId | "demo";
 export type ContactType = "whatsapp" | "email";
 export type LeadStatus =
   | "novo"
@@ -57,7 +58,7 @@ export type Lead = {
   adminNotes: string;
   createdAt: string;
   updatedAt: string;
-  updatedBy: SpecialistId | null;
+  updatedBy: AdminActorId | null;
 };
 
 export const SPECIALISTS: Specialist[] = [
@@ -67,8 +68,7 @@ export const SPECIALISTS: Specialist[] = [
     name: "Flávio Calegário",
     instagramUser: "@recolfordconsorcio",
     instagramUrl: "https://www.instagram.com/recolfordconsorcio/",
-    description:
-      "Atuação com Consórcio Disal no Acre, veículos novos e seminovos e simulação sem compromisso.",
+    description: "Há 30 anos realizando sonhos no Acre.",
     photoPath: "/media/specialists/flavio/profile.jpg",
     videoPath: "/media/specialists/flavio/intro.mp4",
     whatsapp: "",
@@ -81,8 +81,7 @@ export const SPECIALISTS: Specialist[] = [
     name: "Jéssica Reis",
     instagramUser: "@jessicareis.rb",
     instagramUrl: "https://www.instagram.com/jessicareis.rb/",
-    description:
-      "Atendimento em Rio Branco/AC e planejamento para aquisição de veículos por consórcio.",
+    description: "",
     photoPath: "/media/specialists/jessica/profile.jpg",
     videoPath: "/media/specialists/jessica/intro.mp4",
     whatsapp: "",
@@ -95,7 +94,7 @@ export const SPECIALISTS: Specialist[] = [
     name: "Jersey Neves",
     instagramUser: "@jerseyneves.consocios",
     instagramUrl: "https://www.instagram.com/jerseyneves.consocios/",
-    description: "Biografia profissional pendente de confirmação.",
+    description: "",
     photoPath: "/media/specialists/jersey/profile-1.jpg",
     videoPath: "/media/specialists/jersey/intro.mp4",
     whatsapp: "",
@@ -236,6 +235,11 @@ export function getSpecialistBySlug(slug: string) {
 
 export function specialistName(id: SpecialistId | null | undefined) {
   return getSpecialist(id)?.name ?? "Não atribuído";
+}
+
+export function adminActorName(id: AdminActorId | null | undefined) {
+  if (id === "demo") return "Administrador de demonstração";
+  return specialistName(id);
 }
 
 export function initials(name: string) {

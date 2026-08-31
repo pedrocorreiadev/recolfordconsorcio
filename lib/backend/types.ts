@@ -5,6 +5,7 @@ import type {
   Lead,
   LeadStatus,
   LeadTemperature,
+  AdminActorId,
   SpecialistId,
 } from "@/lib/consorcio";
 
@@ -37,5 +38,6 @@ export type Repository = {
   removeCampaign(id: number): Promise<void>;
   listLeads(): Promise<Lead[]>;
   createLead(input: LeadInput): Promise<number>;
-  updateLead(id: number, changes: LeadUpdate, updatedBy: SpecialistId): Promise<Lead | null>;
+  updateLead(id: number, changes: LeadUpdate, updatedBy: AdminActorId): Promise<Lead | null>;
+  removeLead(id: number): Promise<void>;
 };

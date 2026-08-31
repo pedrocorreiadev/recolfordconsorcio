@@ -1,7 +1,7 @@
 import { createSqliteRepository } from "@/lib/backend/sqlite";
 import { createSupabaseRepository } from "@/lib/backend/supabase";
 import type { CampaignInput, CampaignUpdate, LeadInput, LeadUpdate, Repository } from "@/lib/backend/types";
-import type { SpecialistId } from "@/lib/consorcio";
+import type { AdminActorId } from "@/lib/consorcio";
 
 export type { CampaignInput, CampaignUpdate, LeadInput, LeadUpdate } from "@/lib/backend/types";
 
@@ -49,6 +49,10 @@ export async function createLead(input: LeadInput) {
   return getRepository().createLead(input);
 }
 
-export async function updateLead(id: number, changes: LeadUpdate, updatedBy: SpecialistId) {
+export async function updateLead(id: number, changes: LeadUpdate, updatedBy: AdminActorId) {
   return getRepository().updateLead(id, changes, updatedBy);
+}
+
+export async function removeLead(id: number) {
+  return getRepository().removeLead(id);
 }
