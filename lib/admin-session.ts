@@ -7,6 +7,10 @@ const COOKIE_NAME = "recol_admin_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 8;
 const DEMO_ADMIN_ID = "demo";
 const DEMO_ADMIN_NAME = "Administrador de demonstração";
+// Fallback temporário para visualização na Vercel quando as envs demo ainda não foram configuradas.
+const DEMO_FALLBACK_IDENTIFIER = "adm";
+const DEMO_FALLBACK_PASSWORD = "123";
+const DEMO_FALLBACK_SESSION_SECRET = "recol-demo-session-secret-for-vercel-visualization";
 
 export type AdminSession = {
   id: AdminActorId;
@@ -23,8 +27,14 @@ type AdminCredential = {
 
 function settings() {
   return {
-    secret: process.env.ADMIN_SESSION_SECRET ?? "",
+    secret: process.env.ADMIN_SESSION_SECRET || (isVercelDemoFallbackEnabled() ? DEMO_FALLBACK_SESSION_SECRET : ""),
   };
+}
+
+function isVercelDemoFallbackEnabled() {
+  return process.env.NODE_ENV === "production" &&
+    process.env.VERCEL === "1" &&
+    process.env.DEMO_ADMIN_ENABLED !== "false";
 }
 
 function adminCredentials() {
@@ -46,11 +56,11 @@ function adminCredentials() {
     },
   ];
 
-  if (process.env.DEMO_ADMIN_ENABLED === "true") {
+  if (process.env.DEMO_ADMIN_ENABLED === "true" || isVercelDemoFallbackEnabled()) {
     credentials.push({
       id: DEMO_ADMIN_ID,
-      identifier: process.env.ADMIN_DEMO_IDENTIFIER ?? "",
-      password: process.env.ADMIN_DEMO_PASSWORD ?? "",
+      identifier: process.env.ADMIN_DEMO_IDENTIFIER || DEMO_FALLBACK_IDENTIFIER,
+      password: process.env.ADMIN_DEMO_PASSWORD || DEMO_FALLBACK_PASSWORD,
     });
   }
 
