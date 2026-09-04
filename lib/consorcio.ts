@@ -141,8 +141,8 @@ const LEAD_TEMPERATURE_LABELS = Object.fromEntries(
 export const DEFAULT_CAMPAIGNS: Campaign[] = [
   {
     id: -1,
-    title: "Seu automóvel novo começa aqui",
-    subtitle: "Crédito para planejar sua próxima troca com tranquilidade.",
+    title: "Cenário para automóvel",
+    subtitle: "Exemplo de crédito para visualizar uma troca de veículo.",
     segment: "carro",
     credit: 150000,
     term: 84,
@@ -154,8 +154,8 @@ export const DEFAULT_CAMPAIGNS: Campaign[] = [
   },
   {
     id: -2,
-    title: "O plano da sua casa própria",
-    subtitle: "Organize a compra, construção ou reforma do seu imóvel.",
+    title: "Cenário para imóvel",
+    subtitle: "Exemplo de crédito para compra, construção ou reforma.",
     segment: "imovel",
     credit: 300000,
     term: 180,
@@ -167,8 +167,8 @@ export const DEFAULT_CAMPAIGNS: Campaign[] = [
   },
   {
     id: -3,
-    title: "Duas rodas, um novo caminho",
-    subtitle: "Planos para motocicletas a partir de R$ 20 mil.",
+    title: "Cenário para motocicleta",
+    subtitle: "Exemplo de crédito para motos a partir de R$ 20 mil.",
     segment: "moto",
     credit: 30000,
     term: 60,

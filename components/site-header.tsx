@@ -9,8 +9,8 @@ import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTi
 
 const navItems = [
   { label: "Início", href: "/" },
-  { label: "Simulação", href: "/simulacao" },
-  { label: "Especialistas", href: "/especialistas" },
+  { label: "Simulação visual", href: "/simulacao" },
+  { label: "Equipe", href: "/especialistas" },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -39,21 +39,30 @@ export function SiteHeader() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Button asChild variant="ghost" className="text-white/75 hover:bg-white/10 hover:text-white"><Link href="/admin">Área administrativa</Link></Button>
-          <Button asChild className="rounded-xl bg-[#f5b942] px-5 font-bold text-[#09234a] shadow-none hover:bg-[#ffd16d]"><Link href="/simulacao"><Calculator className="size-4" /> Simular grátis</Link></Button>
+          <span className="rounded-full border border-white/10 px-3 py-2 text-xs font-semibold text-white/60">Protótipo arquivado</span>
+          <Button asChild className="rounded-xl bg-[#f5b942] px-5 font-bold text-[#09234a] shadow-none hover:bg-[#ffd16d]">
+            <Link href="/simulacao"><Calculator className="size-4" /> Ver simulação</Link>
+          </Button>
         </div>
 
         <Sheet>
           <SheetTrigger asChild><Button variant="ghost" size="icon" className="text-white hover:bg-white/10 md:hidden" aria-label="Abrir menu"><Menu className="size-6" /></Button></SheetTrigger>
           <SheetContent className="border-[#183861] bg-[#071b38] text-white">
-            <SheetHeader><SheetTitle className="text-white">Recol Ford Consórcio</SheetTitle><SheetDescription className="text-white/60">Simulação sem compromisso com especialistas.</SheetDescription></SheetHeader>
+            <SheetHeader>
+              <SheetTitle className="text-white">Recol Ford Consórcio</SheetTitle>
+              <SheetDescription className="text-white/60">Protótipo front-end preservado como registro da proposta.</SheetDescription>
+            </SheetHeader>
             <nav className="flex flex-col px-4" aria-label="Navegação móvel">
               {navItems.map((item) => (
                 <SheetClose key={item.href} asChild>
                   <Link href={item.href} className={`flex items-center justify-between border-b border-white/10 py-5 font-semibold ${isActive(pathname, item.href) ? "text-[#ffd77d]" : ""}`}>{item.label}<ChevronRight className="size-4 text-[#f5b942]" /></Link>
                 </SheetClose>
               ))}
-              <Link href="/admin" className="py-5 text-sm text-white/65">Área administrativa</Link>
+              <SheetClose asChild>
+                <Link href="/simulacao" className="mt-5 flex items-center justify-center gap-2 rounded-xl bg-[#f5b942] px-4 py-3 font-extrabold text-[#09234a]">
+                  <Calculator className="size-4" /> Ver simulação
+                </Link>
+              </SheetClose>
             </nav>
           </SheetContent>
         </Sheet>

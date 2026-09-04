@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Recol Ford Consórcio | Simulação sem compromisso",
+  title: "Recol Ford Consórcio | Protótipo arquivado",
   description:
-    "Faça uma simulação sem compromisso de consórcio e receba atendimento da equipe de especialistas.",
+    "Protótipo front-end de uma proposta de simulação de consórcio que não avançou para operação.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",

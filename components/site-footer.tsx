@@ -7,10 +7,12 @@ export function SiteFooter() {
             <span className="grid size-10 place-items-center rounded-xl bg-[#f5b942] font-black text-[#09234a]">RF</span>
             <strong>Recol Ford Consórcio</strong>
           </div>
-          <p className="mt-4 max-w-lg text-xs leading-6 text-white/45">As simulações são estimativas e não representam proposta comercial definitiva. Consulte as condições do grupo, regulamento e contrato antes da adesão.</p>
+          <p className="mt-4 max-w-lg text-xs leading-6 text-white/45">
+            Protótipo front-end arquivado. As simulações são ilustrativas, não salvam dados e não representam proposta comercial ativa.
+          </p>
         </div>
         <div className="text-sm text-white/50">
-          <p>Equipe de especialistas</p>
+          <p>Proposta descontinuada</p>
           <p className="mt-2">Rio Branco, Acre</p>
         </div>
       </div>
